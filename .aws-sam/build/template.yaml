@@ -1,0 +1,41 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Cloud Resume Challenge Backend
+Resources:
+  VisitorCounter:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: VisitorCounter
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Architectures:
+      - x86_64
+      Events:
+        GetVisitorCount:
+          Type: Api
+          Properties:
+            Path: /visitor-count
+            Method: get
+        UpdateVisitorCount:
+          Type: Api
+          Properties:
+            Path: /visitor-count
+            Method: post
+    Metadata:
+      SamResourceId: VisitorCounter
+  VisitorTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: visitor-counter
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: id
+        AttributeType: S
+      KeySchema:
+      - AttributeName: id
+        KeyType: HASH
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value:
+      Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/
