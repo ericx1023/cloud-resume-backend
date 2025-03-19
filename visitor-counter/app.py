@@ -9,7 +9,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 # 獲取 DynamoDB 表名
-TABLE_NAME = os.environ.get('DYNAMODB_TABLE', 'visitor-counter')
+TABLE_NAME = os.environ.get('DYNAMODB_TABLE', 'visitor-counter-new')
 
 # 初始化 DynamoDB 客戶端
 dynamodb = boto3.resource('dynamodb')
@@ -19,7 +19,7 @@ table = dynamodb.Table(TABLE_NAME)
 CORS_HEADERS = {
     'Access-Control-Allow-Origin': '*',  # 在生產環境中，應限制為您的網站域名
     'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS'
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
 }
 
 def lambda_handler(event, context):
@@ -36,28 +36,39 @@ def lambda_handler(event, context):
             'body': json.dumps({})
         }
     
-    try:
-        # 嘗試增加計數器並獲取新的值
-        new_count = increment_counter()
-        
-        # 準備返回 API 響應
-        return {
-            'statusCode': 200,
-            'headers': CORS_HEADERS,
-            'body': json.dumps({
-                'count': new_count
-            })
-        }
-    except Exception as e:
-        logger.error(f"Error processing request: {str(e)}")
-        return {
-            'statusCode': 500,
-            'headers': CORS_HEADERS,
-            'body': json.dumps({
-                'error': 'Internal Server Error',
-                'message': str(e)
-            })
-        }
+    # 確保能處理 GET 和 POST 請求
+    if event.get('httpMethod') in ['GET', 'POST']:
+        try:
+            # 嘗試增加計數器並獲取新的值
+            new_count = increment_counter()
+            
+            # 準備返回 API 響應
+            return {
+                'statusCode': 200,
+                'headers': CORS_HEADERS,
+                'body': json.dumps({
+                    'count': new_count
+                })
+            }
+        except Exception as e:
+            logger.error(f"Error processing request: {str(e)}")
+            return {
+                'statusCode': 500,
+                'headers': CORS_HEADERS,
+                'body': json.dumps({
+                    'error': 'Internal Server Error',
+                    'message': str(e)
+                })
+            }
+    
+    # 如果是其他 HTTP 方法，返回 405 Method Not Allowed
+    return {
+        'statusCode': 405,
+        'headers': CORS_HEADERS,
+        'body': json.dumps({
+            'error': 'Method Not Allowed'
+        })
+    }
 
 def increment_counter():
     """
